@@ -202,13 +202,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 488f7f6d0e085d6428cd9270becfc7fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ForwardAcceleration: 2500
-  MaxForwardSpeed: 25
-  ReverseAcceleration: 1000
+  ForwardAcceleration: 1500
+  MaxForwardSpeed: 15
+  MaxSpeedWhileSpooling: 300
+  ReverseAcceleration: 500
   MaxReverseSpeed: 10
-  TurnRate: 180
-  RecoilForce: 50
-  GunCooldown: 0.25
+  TurnRate: 120
+  TurnRateWhileSpooling: 30
+  RecoilForce: 5000
+  GunCooldown: 0.05
   LaserCooldown: 5
   HoldDuration: 1
   ForwardKey: 119
@@ -216,3 +218,6 @@ MonoBehaviour:
   TurnLeftKey: 97
   TurnRightKey: 100
   FireKey: 32
+  BulletPrefab: {fileID: 6175701394820248493, guid: 41f7475d02422f44eaa8582ccc0c2144, type: 3}
+  body: {fileID: 4732751278470828457}
+  LaserRange: 100
