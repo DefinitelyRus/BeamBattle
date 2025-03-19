@@ -30,17 +30,22 @@ public class Bullet : MonoBehaviour {
 	/// The player that shot this bullet.
 	/// </summary>
 	[Header("Game Objects and Components")]
-	public Player shooter;
+	public Player Shooter;
 
 	/// <summary>
 	/// The rigidbody of this bullet.
 	/// </summary>
-	public Rigidbody2D body;
+	public Rigidbody2D Body;
 
 	/// <summary>
-	/// The trigger collider of this bullet.
+	/// The Trigger collider of this bullet.
 	/// </summary>
-	public CircleCollider2D trigger;
+	public CircleCollider2D Trigger;
+
+	/// <summary>
+	/// The Explosion prefab.
+	/// </summary>
+	public GameObject Explosion;
 
 	#endregion
 
@@ -51,9 +56,9 @@ public class Bullet : MonoBehaviour {
 	/// </summary>
 	void DestroySelf(bool silent = false) {
 		if (!silent) {
-			//TODO: Insert small explosion animation here
-
-			//TODO: Insert SFX here
+			//Spawn small Explosion
+			GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
+			boom.GetComponent<Explosion>().ExplosionSize = 1;
 		}
 
 		Destroy(gameObject);
@@ -65,8 +70,8 @@ public class Bullet : MonoBehaviour {
 
 	void Start()
     {
-		body = GetComponent<Rigidbody2D>();
-		trigger = GetComponent<CircleCollider2D>();
+		Body = GetComponent<Rigidbody2D>();
+		Trigger = GetComponent<CircleCollider2D>();
 		LifespanRemaining = BaseLifespan;
 	}
     
@@ -77,12 +82,12 @@ public class Bullet : MonoBehaviour {
 		if (LifespanRemaining <= 0) DestroySelf(true); //Silently destroys self
 
 		//Body.AddForce(Speed * Time.deltaTime * transform.up, ForceMode2D.Impulse);
-		body.linearVelocity = Speed * transform.up;
+		Body.linearVelocity = Speed * transform.up;
 	}
 
 	void OnTriggerEnter2D(Collider2D other) {
-		//If the other object is the shooter, ignore it.
-		if (other.gameObject == shooter.gameObject) return;
+		//If the other object is the Shooter, ignore it.
+		if (other.gameObject == Shooter.gameObject) return;
 
 		//If the other object is neither a player nor a bullet, destroy the bullet.
 		if (other.gameObject.GetComponent<Player>() is null && other.gameObject.GetComponent<Bullet>() is null) {

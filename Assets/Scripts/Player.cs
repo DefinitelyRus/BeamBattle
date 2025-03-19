@@ -90,7 +90,7 @@ public class Player : MonoBehaviour
 	public Rigidbody2D Body;
 
 	/// <summary>
-	/// The laser guide sprite that indicates the direction of the laser beam.
+	/// The laser guide sprite that indicates the deltaGap of the laser beam.
 	/// </summary>
 	public SpriteRenderer LaserGuide;
 
@@ -103,14 +103,24 @@ public class Player : MonoBehaviour
 	/// The animator for the player's animations.
 	/// <br/><br/>
 	/// The player catches on fire on their last hitpoint--that's
-	/// the only time an animation is needed.
+	/// the only time an explosionAnimation is needed.
 	/// </summary>
 	public Animator PlayerAnimator;
 
 	/// <summary>
-	/// The animator for the thrust animation.
+	/// The animator for the thrust explosionAnimation.
 	/// </summary>
 	public Animator ThrustAnimator;
+
+	/// <summary>
+	/// The Explosion prefab to instantiate when the player is damaged or killed.
+	/// </summary>
+	public GameObject Explosion;
+
+	/// <summary>
+	/// The laser beam prefab containing the mask and sprite.
+	/// </summary>
+	public GameObject LaserSprite;
 
 	#endregion
 
@@ -162,24 +172,14 @@ public class Player : MonoBehaviour
 		Hitpoints--;
 		Debug.Log($"[{gameObject.name}] was hit! HP: {Hitpoints}");
 
-		//Update the player's health sprite/animation
+		//Update the player's health sprite/explosionAnimation
 		PlayerAnimator.SetInteger("Health", Hitpoints);
 
-		//TODO: Spawn an explosion animation as its own object
+		//Boom!
+		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
+		boom.GetComponent<Explosion>().ExplosionSize = 2;
 
-		//TODO: Add explosion SFX
-
-		switch (Hitpoints) {
-			case 2:
-				//TODO: Apply damaged sprite
-				break;
-			case 1:
-				//TODO: Apply heavily damaged sprite
-				break;
-			case 0:
-				Kill();
-				break;
-		}
+		if (Hitpoints <= 0) Kill();
 	}
 
 	/// <summary>
@@ -211,18 +211,30 @@ public class Player : MonoBehaviour
 	private IEnumerator ExecuteDeathSequence(float initialDelay = 1) {
 		yield return new WaitForSeconds(initialDelay);
 
-		//TODO: Add explosion SFX
-
-		//TODO: Add large explosion animation
+		//Boom!
+		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
+		boom.GetComponent<Explosion>().ExplosionSize = 3;
 
 		PlayerSprite.enabled = false;
 
 		yield return new WaitForSeconds(2);
 
 		Destroy(gameObject);
-
-		//TODO: In LevelManager, automatically spawn a new player instance after the gameObject is destroyed.
 	}
+
+	#endregion
+
+	#region Audio
+
+	public AudioSource ThrustSFX;
+
+	public AudioSource GunSFX;
+
+	public AudioSource ChargingSFX;
+
+	public AudioSource LaserSFX;
+
+	public AudioSource MissileWarningSFX;
 
 	#endregion
 
@@ -247,6 +259,9 @@ public class Player : MonoBehaviour
     {
         Body = GetComponent<Rigidbody2D>();
 		LaserGuide = transform.GetChild(0).GetComponent<SpriteRenderer>();
+		PlayerSprite = GetComponent<SpriteRenderer>();
+		PlayerAnimator = GetComponent<Animator>();
+		ThrustAnimator = transform.GetChild(1).GetComponent<Animator>();
 
 		MaxForwardSpeedCopy = MaxForwardSpeed;
 		TurnRateCopy = TurnRate;
@@ -258,12 +273,14 @@ public class Player : MonoBehaviour
     {
 		#region Weapons
 		//Fire gun
-		if (Input.GetKeyDown(FireKey) && RemainingGunCooldown == 0) {
-			Debug.Log($"[{gameObject.name}] Firing gun!");
+		if (Input.GetKeyUp(FireKey) && RemainingGunCooldown == 0) {
 
 			//Spawn bullet
 			GameObject bullet = Instantiate(BulletPrefab, transform.position, transform.rotation);
-			bullet.GetComponent<Bullet>().shooter = this;
+			bullet.GetComponent<Bullet>().Shooter = this;
+
+			//Plays gun shot SFX
+			GunSFX.Play();
 
 			RemainingGunCooldown = GunCooldown;
 		}
@@ -279,7 +296,9 @@ public class Player : MonoBehaviour
 			//Fades in the laser guide sprite while spooling up.
 			LaserGuide.color = new Color(1, 1, 1, Mathf.Lerp(0, 1, RemainingHoldDuration / HoldDuration));
 
-			//TODO: Enable spool-up SFX
+			//Plays spool-up SFX
+			if (!ChargingSFX.isPlaying) ChargingSFX.PlayDelayed(0.15f);
+			//Delayed because it's audible when firing the guns.
 		}
 
 		//Did not hold long enough to fire
@@ -292,7 +311,8 @@ public class Player : MonoBehaviour
 			//Disables the laser guide sprite when not spooling up.
 			LaserGuide.color = new Color(1, 1, 1, 0);
 
-			//TODO: Disable and reset spool-up SFX
+			//Stops the spool-up SFX
+			ChargingSFX.Stop();
 
 			//TODO: Play SFX indicating that it was not held long enough to fire the laser.
 		}
@@ -315,13 +335,11 @@ public class Player : MonoBehaviour
 			//Disables the laser guide sprite after firing the laser.
 			LaserGuide.color = new Color(1, 1, 1, 0);
 
-			#region SFX
+			//Plays the laser beam firing SFX
+			LaserSFX.Play();
 
-			//TODO: Add laser beam firing SFX
-
-			//TODO: Disable and reset spool-up SFX
-
-			#endregion
+			//Stops the spool-up SFX
+			ChargingSFX.Stop();
 
 			#region Raycasts and Effects
 
@@ -336,9 +354,14 @@ public class Player : MonoBehaviour
 				if (hit.collider.gameObject != gameObject) {
 					Debug.Log($"[{gameObject.name}] Hit {hit.collider.gameObject.name} at {hit.distance:F2} units.");
 
-					//TODO: Explode at hit.point if hit.collider is not a player
+					//Explodes where the laser hits
+					GameObject boom = Instantiate(Explosion, hit.point, transform.rotation);
+					boom.GetComponent<Explosion>().ExplosionSize = 3;
 
-					//TODO: Render the laser sprite at `hit.centroid`
+					//Spawns the laser sprite between the shooter and the hit object
+					Vector2 deltaGap = Vector2.Lerp(transform.position, hit.centroid, 0.5f);
+					GameObject laser = Instantiate(LaserSprite, deltaGap, transform.rotation);
+					laser.transform.localScale = new Vector3(1, hit.distance, 1);
 
 					//If the object is a player, kill it.
 					if (hit.collider.gameObject.GetComponent<Player>() is Player player) player.Kill();
@@ -348,6 +371,16 @@ public class Player : MonoBehaviour
 
 				//If the object is this player, ignore it.
 				else continue;
+			}
+
+			//If the laser beam reaches its max range...
+			if (hits.Length == 1) {
+				Debug.Log($"[{gameObject.name}] Laser beam reached max range.");
+
+				//Spawns the laser sprite between the shooter and the laser's max range.
+				Vector2 deltaGap = Vector2.Lerp(transform.position, transform.position + transform.up * (LaserRange / 2), 0.5f);
+				GameObject laser = Instantiate(LaserSprite, deltaGap, transform.rotation);
+				laser.transform.localScale = new Vector3(1, LaserRange, 1);
 			}
 
 			//Draws the laser beam in the Scene view for debugging.
@@ -371,19 +404,16 @@ public class Player : MonoBehaviour
 
 		#region Movement Animations and SFX
 
-		//Enable thrust SFX and animation
-		if (Input.GetKey(ForwardKey)) {
+		//Enable thrust SFX and explosionAnimation
+		if (Input.GetKey(ForwardKey) && Hitpoints > 0) {
 			ThrustAnimator.SetBool("IsThrusting", true);
-			Debug.Log($"[{gameObject.name}] Thrusting!");
-
-			//TODO: Add thrust SFX
+			if (!ThrustSFX.isPlaying) ThrustSFX.Play();
 		}
 
-		//Disable thrust SFX and animation
-		else if (Input.GetKeyUp(ForwardKey)) {
+		//Disable thrust SFX and explosionAnimation
+		else if (Input.GetKeyUp(ForwardKey) && Hitpoints > 0) {
 			ThrustAnimator.SetBool("IsThrusting", false);
-
-			//TODO: Stop thrust SFX
+			ThrustSFX.Stop();
 		}
 		/*
 		 * Animations are handled separately from physics calculations.

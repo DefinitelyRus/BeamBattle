@@ -49,7 +49,7 @@ public class LevelManager : MonoBehaviour
 		Vector2 spawnPosition = new Vector2(Random.Range(-10, 10), Random.Range(-10, 10));
 		//TODO: Choose from a random node in the Spawnpoints object.
 
-		//TODO: Add respawn animation at the spawn position
+		//TODO: Add respawn explosionAnimation at the spawn position
 
 		//TODO: Add respawn SFX at the spawn position
 
