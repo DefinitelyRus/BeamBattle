@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class LevelManager : MonoBehaviour
 {
@@ -39,7 +40,7 @@ public class LevelManager : MonoBehaviour
 
 	public AudioSource RespawnSFX;
 
-	public AudioSource VictoryFX;
+	public AudioSource VictorySFX;
 
 	#endregion
 
@@ -62,11 +63,8 @@ public class LevelManager : MonoBehaviour
 		return newPlayer;
 	}
 
-	void Start()
-    {
-		#region Music
-
-		MusicTracks = Resources.LoadAll<AudioClip>("Audio/Music");
+	private void PlayMusic() {
+		if (!Music.enabled) return;
 
 		if (MusicTracks.Length > 0) {
 			AudioClip newTrack;
@@ -83,35 +81,141 @@ public class LevelManager : MonoBehaviour
 			}
 			while (Music.clip == newTrack);
 
-			Debug.Log($"[LevelManager] Now playing: {Music.clip.name}");
+			Debug.Log($"[LevelManager] Now playing: Ben Prunty - {Music.clip.name}");
+
 			Music.Play();
-		}
-		else {
+		} else {
 			Debug.LogWarning("[LevelManager] No music tracks found.");
 		}
+	}
 
-		#endregion
+	private void Win(GameObject winner) {
+		gameOver = true;
+
+		//TODO: Add victory screen here
+
+		Music.Stop();
+
+		//Disables the music component so that it doesn't play again
+		Music.enabled = false; 
+
+		VictorySFX.Play();
+	}
+
+	private void Restart() {
+		Debug.Log("[LevelManager] Restarting level...");
+
+		gameOver = false;
+
+		SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+		Music.enabled = true; //Re-enables the music component after the level is reloaded.
+
+		Music.Stop(); //Stops the music when the level is reloaded.
+					  //When the level is reloaded, new music will play.
+	}
+
+	void Start()
+    {
+		MusicTracks = Resources.LoadAll<AudioClip>("Music");
 	}
 
 	void Update() {
-		if (Player1 == null) {
+		#region Player Scoring
+
+		if (Player1 == null && !gameOver) {
 			Player2Score++;
 
 			//TODO: Add score SFX here
 
 			//TODO: Update UI here
 
-			Player1 = SpawnPlayer(Player1Prefab);
+			//Spawn a new player if the game is not over
+			if (Player2Score < WinScore) Player1 = SpawnPlayer(Player1Prefab);
+			else Win(Player2);
 		}
 
-		if (Player2 == null) {
-			Player1Score++;
+		if (Player2 == null && !gameOver) {
+		Player1Score++;
 
 			//TODO: Add score SFX here
 
 			//TODO: Update UI here
 
-			Player2 = SpawnPlayer(Player2Prefab);
+			//Spawn a new player if the game is not over
+			if (Player1Score < WinScore) Player2 = SpawnPlayer(Player2Prefab);
+			else Win(Player1);
 		}
+
+		#endregion
+
+		if (!Music.isPlaying && !gameOver) PlayMusic();
+
+		#region Universal Controls
+
+		//Volume up
+		if (Input.GetKeyDown(KeyCode.Plus)) {
+			Music.volume += 0.1f;
+			if (Music.volume > 1) Music.volume = 1;
+			Debug.Log($"[LevelManager] Music volume: {Music.volume}");
+		}
+
+		//Volume down
+		else if (Input.GetKeyDown(KeyCode.Minus)) {
+			Music.volume -= 0.1f;
+			if (Music.volume < 0) Music.volume = 0;
+			Debug.Log($"[LevelManager] Music volume: {Music.volume}");
+		}
+
+		//Quit game
+		if (Input.GetKey(KeyCode.Escape)) {
+			if (holdTimeRemaining > 0) {
+				holdTimeRemaining -= Time.deltaTime;
+
+				//Timer reached zero; exit the game
+				if (holdTimeRemaining <= 0) {
+					Debug.Log("[LevelManager] Quitting game...");
+					Application.Quit(); //Doesn't work in editor mode
+				}
+			}
+		}
+
+		//Cancel quit game
+		else if (Input.GetKeyUp(KeyCode.Escape)) {
+			Debug.Log("[LevelManager] Cancelled quit game.");
+			holdTimeRemaining = holdKeyDuration; //Reset timer
+		}
+
+		//Restart level
+		if (Input.GetKey(KeyCode.R)) {
+			if (holdTimeRemaining > 0) {
+				holdTimeRemaining -= Time.deltaTime;
+
+				//Timer reached zero; restart the level
+				if (holdTimeRemaining <= 0) Restart();
+			}
+		}
+
+		//Cancel restart level
+		else if (Input.GetKeyUp(KeyCode.R)) {
+			Debug.Log("[LevelManager] Cancelled restart level.");
+			holdTimeRemaining = holdKeyDuration; //Reset timer
+		}
+
+		#endregion
 	}
+
+	/// <summary>
+	/// How long the player has to press the exit button to quit the game.
+	/// </summary>
+	private float holdKeyDuration = 3;
+
+	/// <summary>
+	/// The remaining time the player has to press the exit button to quit the game.
+	/// <br/><br/>
+	/// Resets when the player releases the exit button.
+	/// </summary>
+	private float holdTimeRemaining = 3;
+
+	private bool gameOver = false;
 }
