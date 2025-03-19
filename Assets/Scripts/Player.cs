@@ -99,6 +99,19 @@ public class Player : MonoBehaviour
 	/// </summary>
 	public SpriteRenderer PlayerSprite;
 
+	/// <summary>
+	/// The animator for the player's animations.
+	/// <br/><br/>
+	/// The player catches on fire on their last hitpoint--that's
+	/// the only time an animation is needed.
+	/// </summary>
+	public Animator PlayerAnimator;
+
+	/// <summary>
+	/// The animator for the thrust animation.
+	/// </summary>
+	public Animator ThrustAnimator;
+
 	#endregion
 
 	#region Weapons
@@ -149,6 +162,9 @@ public class Player : MonoBehaviour
 		Hitpoints--;
 		Debug.Log($"[{gameObject.name}] was hit! HP: {Hitpoints}");
 
+		//Update the player's health sprite/animation
+		PlayerAnimator.SetInteger("Health", Hitpoints);
+
 		//TODO: Spawn an explosion animation as its own object
 
 		//TODO: Add explosion SFX
@@ -171,6 +187,10 @@ public class Player : MonoBehaviour
 	/// </summary>
 	public void Kill() {
 		Debug.Log($"[{gameObject.name}] was killed!");
+
+		//Just for animations--the player is already dead.
+		Hitpoints = 0;
+		PlayerAnimator.SetInteger("Health", Hitpoints);
 
 		//Disables player movement and allows drifting
 		Body.linearDamping = 0.5f;
@@ -230,6 +250,7 @@ public class Player : MonoBehaviour
 
 		MaxForwardSpeedCopy = MaxForwardSpeed;
 		TurnRateCopy = TurnRate;
+		LaserGuide.enabled = true;
 		LaserGuide.color = new Color(1, 1, 1, 0);
 	}
 
@@ -350,10 +371,19 @@ public class Player : MonoBehaviour
 
 		#region Movement Animations and SFX
 
+		//Enable thrust SFX and animation
 		if (Input.GetKey(ForwardKey)) {
-			//TODO: Add thrust animation
+			ThrustAnimator.SetBool("IsThrusting", true);
+			Debug.Log($"[{gameObject.name}] Thrusting!");
 
 			//TODO: Add thrust SFX
+		}
+
+		//Disable thrust SFX and animation
+		else if (Input.GetKeyUp(ForwardKey)) {
+			ThrustAnimator.SetBool("IsThrusting", false);
+
+			//TODO: Stop thrust SFX
 		}
 		/*
 		 * Animations are handled separately from physics calculations.
