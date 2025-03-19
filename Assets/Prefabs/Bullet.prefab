@@ -165,8 +165,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e993e6b3b45b9947874f8d6ec8718f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shooter: {fileID: 0}
-  Speed: 50
+  Speed: 20
   BaseLifespan: 3
+  shooter: {fileID: 0}
   body: {fileID: 8123333842278751478}
   trigger: {fileID: 6777639668534192002}

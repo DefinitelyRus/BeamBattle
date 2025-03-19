@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -75,20 +76,133 @@ public class Player : MonoBehaviour
 
 	#endregion
 
-	#region
+	#region GameObjects and Components
 
-	[Header("Timers and Cooldowns")]
+	/// <summary>
+	/// The bullet prefab to instantiate when firing the gun.
+	/// </summary>
+	[Header("GameObjects and Components")]
+	public GameObject BulletPrefab;
+
+	/// <summary>
+	/// The Rigidbody2D component of the player.
+	/// </summary>
+	public Rigidbody2D Body;
+
+	/// <summary>
+	/// The laser guide sprite that indicates the direction of the laser beam.
+	/// </summary>
+	public SpriteRenderer LaserGuide;
+
+	/// <summary>
+	/// The sprite renderer of the player.
+	/// </summary>
+	public SpriteRenderer PlayerSprite;
+
+	#endregion
+
+	#region Weapons
+
+	/// <summary>
+	/// The range of the laser beam.
+	/// </summary>
+	[Header("Weapons & Hull")]
+	public float LaserRange = 100;
+
+	/// <summary>
+	/// The cooldown time for the gun. This limits the firerate.
+	/// </summary>
 	[Range(0.0f, 5.0f)]
 	public float GunCooldown = 0.25f;
 	private float RemainingGunCooldown = 0;
 
+	/// <summary>
+	/// The cooldown time for the laser beam.
+	/// </summary>
 	[Range(0.0f, 60.0f)]
 	public float LaserCooldown = 5;
 	private float RemainingLaserCooldown = 0;
 
+	/// <summary>
+	/// The duration the player must hold the fire key to fire the laser.
+	/// </summary>
 	[Range(0.0f, 60.0f)]
 	public float HoldDuration = 1;
 	private float RemainingHoldDuration = 0;
+
+	#endregion
+
+	#region Hull
+
+	/// <summary>
+	/// The hitpoints of the player. When this reaches 0, the player is killed.
+	/// <br/><br/>
+	/// It's not accompanied by a "CurrentHitpoints" field because
+	/// the player instance is destroyed entirely and replaced by a new one when killed.
+	/// </summary>
+	public int Hitpoints { get; private set; } = 3;
+
+	/// <summary>
+	/// Damages the player and kills them if hitpoints reach 0.
+	/// </summary>
+	public void TakeHit() {
+		Hitpoints--;
+		Debug.Log($"[{gameObject.name}] was hit! HP: {Hitpoints}");
+
+		//TODO: Spawn an explosion animation as its own object
+
+		//TODO: Add explosion SFX
+
+		switch (Hitpoints) {
+			case 2:
+				//TODO: Apply damaged sprite
+				break;
+			case 1:
+				//TODO: Apply heavily damaged sprite
+				break;
+			case 0:
+				Kill();
+				break;
+		}
+	}
+
+	/// <summary>
+	/// Disables player movement and initiates the death sequence.
+	/// </summary>
+	public void Kill() {
+		Debug.Log($"[{gameObject.name}] was killed!");
+
+		//Disables player movement and allows drifting
+		Body.linearDamping = 0.5f;
+		Body.angularDamping = 0.5f;
+		ForwardAcceleration = 0;
+		ReverseAcceleration = 0;
+		TurnRate = 0;
+		//It's fine to leave these values as is because a new player instance will be created when the player respawns.
+		//I thought of also disabling firing weapons, but let's allow some martyrdom. :)
+
+		StartCoroutine(ExecuteDeathSequence(1));
+	}
+
+	/// <summary>
+	/// Executes the death sequence for the player.
+	/// </summary>
+	/// <param name="initialDelay">How many seconds to wait before exploding.</param>
+	private IEnumerator ExecuteDeathSequence(float initialDelay = 1) {
+		yield return new WaitForSeconds(initialDelay);
+
+		//TODO: Add explosion SFX
+
+		//TODO: Add large explosion animation
+
+		PlayerSprite.enabled = false;
+
+		yield return new WaitForSeconds(2);
+
+		Destroy(gameObject);
+
+		//TODO: In LevelManager, automatically spawn a new player instance after the gameObject is destroyed.
+	}
 
 	#endregion
 
@@ -107,57 +221,16 @@ public class Player : MonoBehaviour
 
 	#endregion
 
-	#region GameObjects and Components
-
-	[Header("GameObjects and Components")]
-	public GameObject BulletPrefab;
-
-	public Rigidbody2D body;
-
-	#endregion
-
-	#region Weapons and Hull
-
-	[Header("Weapons")]
-	public float LaserRange = 100;
-
-	public void Kill() {
-		Debug.Log($"[{gameObject.name}] Killed!");
-
-		//Disables player movement and allows drifting
-		body.linearDamping = 0.5f;
-		body.angularDamping = 0.5f;
-		ForwardAcceleration = 0;
-		ReverseAcceleration = 0;
-		TurnRate = 0;
-		//It's fine to leave these values as is because a new player instance will be created when the player respawns.
-		//I thought of also disabling firing weapons, but let's allow some martyrdom. :)
-
-		//TODO: Delay by 1s
-
-		//TODO: Add explosion SFX
-
-		//TODO: Add explosion animation
-
-		//TODO: Disable player sprite
-
-		//TODO: In SpawnManager, automatically spawn a new player instance after the gameObject is destroyed.
-
-		//TODO: Delay by 2s
-
-		//Destroy(gameObject);
-	}
-
-	#endregion
-
 	#region Unity
 
 	void Start()
     {
-        body = GetComponent<Rigidbody2D>();
+        Body = GetComponent<Rigidbody2D>();
+		LaserGuide = transform.GetChild(0).GetComponent<SpriteRenderer>();
 
 		MaxForwardSpeedCopy = MaxForwardSpeed;
 		TurnRateCopy = TurnRate;
+		LaserGuide.color = new Color(1, 1, 1, 0);
 	}
 
     void Update()
@@ -182,6 +255,9 @@ public class Player : MonoBehaviour
 			MaxForwardSpeed = Mathf.Lerp(MaxForwardSpeed, MaxSpeedWhileSpooling, RemainingHoldDuration / HoldDuration);
 			TurnRate = Mathf.Lerp(TurnRate, TurnRateWhileSpooling, RemainingHoldDuration / HoldDuration);
 
+			//Fades in the laser guide sprite while spooling up.
+			LaserGuide.color = new Color(1, 1, 1, Mathf.Lerp(0, 1, RemainingHoldDuration / HoldDuration));
+
 			//TODO: Enable spool-up SFX
 		}
 
@@ -191,6 +267,9 @@ public class Player : MonoBehaviour
 
 			MaxForwardSpeed = MaxForwardSpeedCopy;
 			TurnRate = TurnRateCopy;
+
+			//Disables the laser guide sprite when not spooling up.
+			LaserGuide.color = new Color(1, 1, 1, 0);
 
 			//TODO: Disable and reset spool-up SFX
 
@@ -211,6 +290,9 @@ public class Player : MonoBehaviour
 			//Restores the player's speed after firing the laser.
 			MaxForwardSpeed = MaxForwardSpeedCopy;
 			TurnRate = TurnRateCopy;
+
+			//Disables the laser guide sprite after firing the laser.
+			LaserGuide.color = new Color(1, 1, 1, 0);
 
 			#region SFX
 
@@ -235,8 +317,9 @@ public class Player : MonoBehaviour
 
 					//TODO: Explode at hit.point if hit.collider is not a player
 
-					//TODO: Render the laser sprite at hit.centroid
+					//TODO: Render the laser sprite at `hit.centroid`
 
+					//If the object is a player, kill it.
 					if (hit.collider.gameObject.GetComponent<Player>() is Player player) player.Kill();
 
 					break;
@@ -252,7 +335,7 @@ public class Player : MonoBehaviour
 			#endregion
 
 			//Applies recoil force to the player
-			body.AddForce(-RecoilForce * Time.deltaTime * transform.up, ForceMode2D.Impulse);
+			Body.AddForce(-RecoilForce * Time.deltaTime * transform.up, ForceMode2D.Impulse);
 
 			//Reset cooldowns and timers
 			RemainingLaserCooldown = LaserCooldown;
@@ -273,7 +356,7 @@ public class Player : MonoBehaviour
 			//TODO: Add thrust SFX
 		}
 		/*
-		 * Animations are handles separately from physics calculations.
+		 * Animations are handled separately from physics calculations.
 		 * It's critical to minimize non-essential calculations
 		 * in FixedUpdate to avoid performance issues.
 		 */
@@ -285,24 +368,24 @@ public class Player : MonoBehaviour
 	void FixedUpdate() {
 		//Forward
 		if (Input.GetKey(ForwardKey)) {
-			body.AddForce(ForwardAcceleration * Time.fixedDeltaTime * transform.up, ForceMode2D.Force);
-			if (body.linearVelocity.magnitude > MaxForwardSpeed) body.linearVelocity = body.linearVelocity.normalized * MaxForwardSpeed;
+			Body.AddForce(ForwardAcceleration * Time.fixedDeltaTime * transform.up, ForceMode2D.Force);
+			if (Body.linearVelocity.magnitude > MaxForwardSpeed) Body.linearVelocity = Body.linearVelocity.normalized * MaxForwardSpeed;
 		}
 
 		//Reverse
 		if (Input.GetKey(ReverseKey)) {
-			body.AddForce(-ReverseAcceleration * Time.fixedDeltaTime * transform.up, ForceMode2D.Force);
-			if (body.linearVelocity.magnitude > MaxReverseSpeed) body.linearVelocity = body.linearVelocity.normalized * MaxReverseSpeed;
+			Body.AddForce(-ReverseAcceleration * Time.fixedDeltaTime * transform.up, ForceMode2D.Force);
+			if (Body.linearVelocity.magnitude > MaxReverseSpeed) Body.linearVelocity = Body.linearVelocity.normalized * MaxReverseSpeed;
 		}
 
 		//Turn Left
 		if (Input.GetKey(TurnLeftKey)) {
-			body.AddTorque(TurnRate * Time.fixedDeltaTime);
+			Body.AddTorque(TurnRate * Time.fixedDeltaTime);
 		}
 
 		//Turn Right
 		if (Input.GetKey(TurnRightKey)) {
-			body.AddTorque(-TurnRate * Time.fixedDeltaTime);
+			Body.AddTorque(-TurnRate * Time.fixedDeltaTime);
 		}
 	}
 
