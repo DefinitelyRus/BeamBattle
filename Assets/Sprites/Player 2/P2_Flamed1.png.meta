@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: ca1755c902f999d4596404c337d9d068
+guid: 05d2bb9a87c954b449478711bcb0fc23
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1850484072750392256
-    second: P2_Cracked_0
+      213: -40893050567845629
+    second: P2_Flamed1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: P2_Cracked_0
+      name: P2_Flamed1_0
       rect:
         serializedVersion: 2
-        x: 77
-        y: 77
-        width: 166
-        height: 150
+        x: 84
+        y: 84
+        width: 152
+        height: 137
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 04cd1354a82c156e0800000000000000
-      internalID: -1850484072750392256
+      spriteID: 3091f17bcf7be6ff0800000000000000
+      internalID: -40893050567845629
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 60f2346cd2e37b540884fc69d7d71ea4
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      P2_Cracked_0: -1850484072750392256
+      P2_Flamed1_0: -40893050567845629
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
