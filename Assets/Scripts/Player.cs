@@ -153,6 +153,103 @@ public class Player : MonoBehaviour
 	public float HoldDuration = 1;
 	private float RemainingHoldDuration = 0;
 
+	
+	private bool allowGun = true;
+
+	public void FireGun() {
+
+		//Spawn bullet
+		GameObject bullet = Instantiate(BulletPrefab, transform.position, transform.rotation);
+		bullet.GetComponent<Bullet>().Shooter = this;
+
+		CancelFireSFX.Stop();
+		GunSFX.Play();
+
+		RemainingGunCooldown = GunCooldown;
+		//The hold duration reset is put here to avoid firing the gun after the laser.
+	}
+
+	public void FireLaser() {
+
+		//Restore the player's speed
+		MaxForwardSpeed = MaxForwardSpeedCopy;
+		TurnRate = TurnRateCopy;
+
+		//Disable the laser guide
+		LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, 0);
+
+		LaserSFX.Play();
+		ChargingSFX.Stop();
+
+		#region Raycasts and Effects
+
+		//Perform a raycast scan
+		Vector2 laserDirection = transform.up;
+		RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, laserDirection, LaserRange);
+
+		//For every object hit by the laser beam...
+		foreach (RaycastHit2D hit in hits) {
+
+			//If the object is not this player...
+			if (hit.collider.gameObject != gameObject) {
+				Debug.Log($"[{gameObject.name}] Hit {hit.collider.gameObject.name} at {hit.distance:F2} units.");
+
+				//Explodes where the laser hits
+				GameObject boom = Instantiate(Explosion, hit.point, transform.rotation);
+				boom.GetComponent<Explosion>().ExplosionSize = 3;
+
+				//Spawns the laser sprite between the shooter and the hit object
+				Vector2 deltaGap = Vector2.Lerp(transform.position, hit.centroid, 0.5f);
+				GameObject laser = Instantiate(LaserSprite, deltaGap, transform.rotation);
+				laser.transform.localScale = new Vector3(1, hit.distance, 1);
+
+				//If the object is a player, kill it.
+				if (hit.collider.gameObject.GetComponent<Player>() is Player player) player.Kill();
+
+				break;
+			}
+
+			//If the object is this player, ignore it.
+			else continue;
+		}
+
+		//If the laser beam reaches its max range...
+		if (hits.Length == 1) {
+			Debug.Log($"[{gameObject.name}] Laser beam reached max range.");
+
+			//Spawns the laser sprite between the shooter and the laser's max range.
+			Vector2 deltaGap = Vector2.Lerp(transform.position, transform.position + transform.up * LaserRange, 0.5f);
+			GameObject laser = Instantiate(LaserSprite, deltaGap, transform.rotation);
+			laser.transform.localScale = new Vector3(1, LaserRange, 1);
+		}
+
+		//Draws the laser beam in the Scene view for debugging.
+		Debug.DrawRay(transform.position, laserDirection * LaserRange, Color.red, 10f);
+
+		#endregion
+
+		//Recoil
+		Body.AddForce(-RecoilForce * Time.deltaTime * transform.up, ForceMode2D.Impulse);
+
+		RemainingLaserCooldown = LaserCooldown;
+		RemainingHoldDuration = 0;
+		allowGun = false;
+	}
+
+	public void ChargeLaser() {
+		RemainingHoldDuration += Time.deltaTime;
+
+		//Slows down the player while spooling up.
+		MaxForwardSpeed = Mathf.Lerp(MaxForwardSpeed, MaxSpeedWhileSpooling, RemainingHoldDuration / HoldDuration);
+		TurnRate = Mathf.Lerp(TurnRate, TurnRateWhileSpooling, RemainingHoldDuration / HoldDuration);
+
+		//Fades in the laser guide sprite while spooling up.
+		LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, Mathf.Lerp(0, 1, RemainingHoldDuration / HoldDuration));
+
+		if (!ChargingSFX.isPlaying) ChargingSFX.PlayDelayed(0.15f);
+		//Delayed because it's audible when firing the guns.
+	}
+
 	#endregion
 
 	#region Hull
@@ -179,7 +276,8 @@ public class Player : MonoBehaviour
 		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
 		boom.GetComponent<Explosion>().ExplosionSize = 2;
 
-		if (Hitpoints <= 0) Kill();
+		if (Hitpoints == 0) Kill();
+		//Set to exactly 0 only so Kill() won't be activated more than once.
 	}
 
 	/// <summary>
@@ -191,6 +289,8 @@ public class Player : MonoBehaviour
 		//Just for animations--the player is already dead.
 		Hitpoints = 0;
 		PlayerAnimator.SetInteger("Health", Hitpoints);
+		ThrustAnimator.SetBool("IsThrusting", false);
+		ThrustSFX.Stop();
 
 		//Disables player movement and allows drifting
 		Body.linearDamping = 0.5f;
@@ -198,8 +298,8 @@ public class Player : MonoBehaviour
 		ForwardAcceleration = 0;
 		ReverseAcceleration = 0;
 		TurnRate = 0;
+		allowGun = false;
 		//It's fine to leave these values as is because a new player instance will be created when the player respawns.
-		//I thought of also disabling firing weapons, but let's allow some martyrdom. :)
 
 		StartCoroutine(ExecuteDeathSequence(1));
 	}
@@ -226,6 +326,7 @@ public class Player : MonoBehaviour
 
 	#region Audio
 
+	[Header("Audio")]
 	public AudioSource ThrustSFX;
 
 	public AudioSource GunSFX;
@@ -235,6 +336,10 @@ public class Player : MonoBehaviour
 	public AudioSource LaserSFX;
 
 	public AudioSource MissileWarningSFX;
+
+	public AudioSource OnCooldownSFX;
+
+	public AudioSource CancelFireSFX;
 
 	#endregion
 
@@ -266,135 +371,39 @@ public class Player : MonoBehaviour
 		MaxForwardSpeedCopy = MaxForwardSpeed;
 		TurnRateCopy = TurnRate;
 		LaserGuide.enabled = true;
-		LaserGuide.color = new Color(1, 1, 1, 0);
+		LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, 0);
 	}
 
     void Update()
     {
 		#region Weapons
 		//Fire gun
-		if (Input.GetKeyUp(FireKey) && RemainingGunCooldown == 0) {
+		if (Input.GetKeyUp(FireKey) && RemainingGunCooldown == 0 && RemainingHoldDuration < 0.2 && allowGun) FireGun();
 
-			//Spawn bullet
-			GameObject bullet = Instantiate(BulletPrefab, transform.position, transform.rotation);
-			bullet.GetComponent<Bullet>().Shooter = this;
-
-			//Plays gun shot SFX
-			GunSFX.Play();
-
-			RemainingGunCooldown = GunCooldown;
-		}
+		//Re-enable gun
+		else if (Input.GetKeyUp(FireKey)) allowGun = true;
 
 		//Spool up laser beam
-		if (Input.GetKey(FireKey) && RemainingLaserCooldown == 0) {
-			RemainingHoldDuration += Time.deltaTime;
-
-			//Slows down the player while spooling up.
-			MaxForwardSpeed = Mathf.Lerp(MaxForwardSpeed, MaxSpeedWhileSpooling, RemainingHoldDuration / HoldDuration);
-			TurnRate = Mathf.Lerp(TurnRate, TurnRateWhileSpooling, RemainingHoldDuration / HoldDuration);
-
-			//Fades in the laser guide sprite while spooling up.
-			LaserGuide.color = new Color(1, 1, 1, Mathf.Lerp(0, 1, RemainingHoldDuration / HoldDuration));
-
-			//Plays spool-up SFX
-			if (!ChargingSFX.isPlaying) ChargingSFX.PlayDelayed(0.15f);
-			//Delayed because it's audible when firing the guns.
-		}
+		if (Input.GetKey(FireKey) && RemainingLaserCooldown == 0) ChargeLaser();
 
 		//Did not hold long enough to fire
-		else if (RemainingHoldDuration < HoldDuration) {
-			RemainingHoldDuration = 0;
+		else if (Input.GetKeyUp(FireKey) && RemainingHoldDuration < HoldDuration) {
 
 			MaxForwardSpeed = MaxForwardSpeedCopy;
 			TurnRate = TurnRateCopy;
 
 			//Disables the laser guide sprite when not spooling up.
-			LaserGuide.color = new Color(1, 1, 1, 0);
+			LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, 0);
 
-			//Stops the spool-up SFX
 			ChargingSFX.Stop();
 
-			//TODO: Play SFX indicating that it was not held long enough to fire the laser.
-		}
+			if (RemainingHoldDuration > 0.2f) CancelFireSFX.Play();
 
-		//Laser beam still cooling down
-		else if (Input.GetKeyDown(FireKey) && RemainingLaserCooldown > 0) {
-			Debug.Log($"[{gameObject.name}] Laser beam cooling down: {RemainingLaserCooldown:F2}s");
-
-			//TODO: Play SFX indicating the laser is still cooling down.
+			RemainingHoldDuration = 0;
 		}
 
 		//Fire laser beam
-		if (RemainingHoldDuration >= HoldDuration) {
-			Debug.Log($"[{gameObject.name}] Firing laser beam!");
-
-			//Restores the player's speed after firing the laser.
-			MaxForwardSpeed = MaxForwardSpeedCopy;
-			TurnRate = TurnRateCopy;
-
-			//Disables the laser guide sprite after firing the laser.
-			LaserGuide.color = new Color(1, 1, 1, 0);
-
-			//Plays the laser beam firing SFX
-			LaserSFX.Play();
-
-			//Stops the spool-up SFX
-			ChargingSFX.Stop();
-
-			#region Raycasts and Effects
-
-			//Perform a raycast scan
-			Vector2 laserDirection = transform.up;
-			RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, laserDirection, LaserRange);
-
-			//For every object hit by the laser beam...
-			foreach (RaycastHit2D hit in hits) {
-
-				//If the object is not this player...
-				if (hit.collider.gameObject != gameObject) {
-					Debug.Log($"[{gameObject.name}] Hit {hit.collider.gameObject.name} at {hit.distance:F2} units.");
-
-					//Explodes where the laser hits
-					GameObject boom = Instantiate(Explosion, hit.point, transform.rotation);
-					boom.GetComponent<Explosion>().ExplosionSize = 3;
-
-					//Spawns the laser sprite between the shooter and the hit object
-					Vector2 deltaGap = Vector2.Lerp(transform.position, hit.centroid, 0.5f);
-					GameObject laser = Instantiate(LaserSprite, deltaGap, transform.rotation);
-					laser.transform.localScale = new Vector3(1, hit.distance, 1);
-
-					//If the object is a player, kill it.
-					if (hit.collider.gameObject.GetComponent<Player>() is Player player) player.Kill();
-
-					break;
-				}
-
-				//If the object is this player, ignore it.
-				else continue;
-			}
-
-			//If the laser beam reaches its max range...
-			if (hits.Length == 1) {
-				Debug.Log($"[{gameObject.name}] Laser beam reached max range.");
-
-				//Spawns the laser sprite between the shooter and the laser's max range.
-				Vector2 deltaGap = Vector2.Lerp(transform.position, transform.position + transform.up * (LaserRange / 2), 0.5f);
-				GameObject laser = Instantiate(LaserSprite, deltaGap, transform.rotation);
-				laser.transform.localScale = new Vector3(1, LaserRange, 1);
-			}
-
-			//Draws the laser beam in the Scene view for debugging.
-			Debug.DrawRay(transform.position, laserDirection * LaserRange, Color.red, 10f);
-
-			#endregion
-
-			//Applies recoil force to the player
-			Body.AddForce(-RecoilForce * Time.deltaTime * transform.up, ForceMode2D.Impulse);
-
-			//Reset cooldowns and timers
-			RemainingLaserCooldown = LaserCooldown;
-			RemainingHoldDuration = 0;
-		}
+		if (RemainingHoldDuration >= HoldDuration) FireLaser();
 
 		//Update cooldowns
 		RemainingGunCooldown = Mathf.Max(RemainingGunCooldown - Time.deltaTime, 0);
@@ -402,15 +411,15 @@ public class Player : MonoBehaviour
 
 		#endregion
 
-		#region Movement Animations and SFX
+		#region Thrusting Animations and SFX
 
-		//Enable thrust SFX and explosionAnimation
+		//Enable
 		if (Input.GetKey(ForwardKey) && Hitpoints > 0) {
 			ThrustAnimator.SetBool("IsThrusting", true);
 			if (!ThrustSFX.isPlaying) ThrustSFX.Play();
 		}
 
-		//Disable thrust SFX and explosionAnimation
+		//Disable
 		else if (Input.GetKeyUp(ForwardKey) && Hitpoints > 0) {
 			ThrustAnimator.SetBool("IsThrusting", false);
 			ThrustSFX.Stop();

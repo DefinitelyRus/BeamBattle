@@ -18,6 +18,9 @@ public class LevelManager : MonoBehaviour
 	public GameObject Spawnpoints;
 
 	public GameObject EndScreen;
+	public GameObject MissilePrefab;
+
+	#endregion
 
     public TextMeshProUGUI WinnerText;
 
@@ -32,6 +35,25 @@ public class LevelManager : MonoBehaviour
 
 	public int WinScore = 10;
 
+	public float OutOfBoundsTimer = 5;
+
+	private float player1BoundsCountdown = 0;
+
+	private float player2BoundsCountdown = 0;
+
+	/// <summary>
+	/// How long the player has to press the button to activate.
+	/// </summary>
+	private float holdKeyDuration = 3;
+
+	/// <summary>
+	/// The remaining time the player has to press the exit button to quit the game.
+	/// <br/><br/>
+	/// Resets when the player releases the exit button.
+	/// </summary>
+	private float holdTimeRemaining = 3;
+
+	private bool gameOver = false;
 
 	#endregion
 
@@ -48,26 +70,31 @@ public class LevelManager : MonoBehaviour
 
 	public AudioSource VictorySFX;
 
+	public AudioSource OutOfBoundsSFX;
+
 	#endregion
 
 	private GameObject SpawnPlayer(GameObject prefab) {
-		//Choose a random spawnpoint
-		Vector2 spawnPosition = new Vector2(Random.Range(-10, 10), Random.Range(-10, 10));
-		//TODO: Choose from a random node in the Spawnpoints object.
+		LayerMask mask = LayerMask.GetMask("Default"); // Adjust this layer to match obstacles
+		float checkRadius = 0.5f; // Adjust based on player collider size
+		Vector2 spawnPosition;
 
-		//TODO: Add respawn explosionAnimation at the spawn position
+		// Ensure the spawn position is not inside another object
+		do {
+			spawnPosition = new Vector2(Random.Range(-40, 40), Random.Range(-40, 40));
+		} while (Physics2D.OverlapCircle(spawnPosition, checkRadius, mask));
 
-		//TODO: Add respawn SFX at the spawn position
+		// TODO: Add respawn animation at the spawn position
+		// TODO: Add respawn SFX at the spawn position
 
 		GameObject newPlayer = Instantiate(prefab);
 
-		//Sets the player's position to the spawnpoint's position
-		//TODO: There will be several spawn nodes. The player should spawn at a random one.
-		//Rotates the player to a random angle
+		// Rotates the player to a random angle
 		newPlayer.transform.SetPositionAndRotation(spawnPosition, Quaternion.Euler(0, 0, Random.Range(0, 360)));
 
 		return newPlayer;
 	}
+
 
 	private void PlayMusic() {
 		if (!Music.enabled) return;
@@ -111,6 +138,8 @@ public class LevelManager : MonoBehaviour
 
 	public void Restart() {
 		Debug.Log("[LevelManager] Restarting level...");
+
+		holdTimeRemaining = 3;
 
 		gameOver = false;
 
@@ -158,10 +187,30 @@ public class LevelManager : MonoBehaviour
 
 		if (!Music.isPlaying && !gameOver) PlayMusic();
 
+		if (player1BoundsCountdown == 0) { }
+		else if (player1BoundsCountdown > 0) player1BoundsCountdown -= Time.deltaTime;
+		else if (player1BoundsCountdown < 0) {
+			//Spawn missile
+			GameObject missile = Instantiate(MissilePrefab);
+			missile.transform.position = (Vector2) transform.position + Random.insideUnitCircle * 100;
+			missile.GetComponent<Missile>().Target = Player1;
+			player1BoundsCountdown = 0;
+		}
+
+		if (player2BoundsCountdown == 0) { }
+		else if (player2BoundsCountdown > 0) player2BoundsCountdown -= Time.deltaTime;
+		else if (player2BoundsCountdown < 0) {
+			//Spawn missile
+			GameObject missile = Instantiate(MissilePrefab);
+			missile.transform.position = (Vector2) transform.position + Random.insideUnitCircle * 100;
+			missile.GetComponent<Missile>().Target = Player2;
+			player2BoundsCountdown = 0;
+		}
+
 		#region Universal Controls
 
 		//Volume up
-		if (Input.GetKeyDown(KeyCode.Plus)) {
+		if (Input.GetKeyDown(KeyCode.Equals)) {
 			Music.volume += 0.1f;
 			if (Music.volume > 1) Music.volume = 1;
 			Debug.Log($"[LevelManager] Music volume: {Music.volume}");
@@ -182,6 +231,7 @@ public class LevelManager : MonoBehaviour
 				//Timer reached zero; exit the game
 				if (holdTimeRemaining <= 0) {
 					Debug.Log("[LevelManager] Quitting game...");
+					holdTimeRemaining = 3;
 					Application.Quit(); //Doesn't work in editor mode
 				}
 			}
@@ -212,17 +262,40 @@ public class LevelManager : MonoBehaviour
 		#endregion
 	}
 
-	/// <summary>
-	/// How long the player has to press the exit button to quit the game.
-	/// </summary>
-	private float holdKeyDuration = 3;
+	private void OnTriggerExit2D(Collider2D collision) {
+		Debug.Log("Something exited");
 
-	/// <summary>
-	/// The remaining time the player has to press the exit button to quit the game.
-	/// <br/><br/>
-	/// Resets when the player releases the exit button.
-	/// </summary>
-	private float holdTimeRemaining = 3;
+		if (collision.gameObject == Player1) {
+			Debug.Log($"[{name}] {collision.gameObject.name} left the play area!");
+			player1BoundsCountdown = OutOfBoundsTimer;
 
-	private bool gameOver = false;
+			if (!OutOfBoundsSFX.isPlaying) OutOfBoundsSFX.Play();
+		}
+			
+		else if (collision.gameObject == Player2) {
+			player2BoundsCountdown = OutOfBoundsTimer;
+			Debug.Log($"[{name}] {collision.gameObject.name} left the play area!");
+
+			if (!OutOfBoundsSFX.isPlaying) OutOfBoundsSFX.Play();
+		}
+	}
+
+	private void OnTriggerEnter2D(Collider2D collision) {
+		Debug.Log("Something entered");
+
+		if (collision.gameObject == Player1) {
+			Debug.Log($"[{name}] {collision.gameObject.name} entered the play area!");
+			player1BoundsCountdown = 0;
+
+			OutOfBoundsSFX.Stop();
+		}
+		
+		else if (collision.gameObject == Player2) {
+			player2BoundsCountdown = 0;
+			Debug.Log($"[{name}] {collision.gameObject.name} entered the play area!");
+
+			OutOfBoundsSFX.Stop();
+			//This will deactivate the SFX if ONE player re-enters the area.
+		}
+	}
 }

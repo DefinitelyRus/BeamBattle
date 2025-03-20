@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7043169996934798937}
   - component: {fileID: 1285204229371103798}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -76,12 +76,12 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 3590829369796979418, guid: 3c32272406e262b42a785c88e2d5f502, type: 3}
-  m_Color: {r: 1, g: 0.25943398, b: 0.25943398, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 3c32272406e262b42a785c88e2d5f502, type: 3}
+  m_Color: {r: 0.99607843, g: 0.12941177, b: 0.10980392, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.17, y: 0.38}
+  m_Size: {x: 0.06, y: 0.38}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -98,8 +98,8 @@ GameObject:
   - component: {fileID: 2754875688975931509}
   - component: {fileID: 6550669647757554470}
   - component: {fileID: 1756619475982969509}
-  m_Layer: 0
-  m_Name: Laser Beam
+  m_Layer: 7
+  m_Name: P1 Laser Beam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

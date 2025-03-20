@@ -87,7 +87,7 @@ public class Bullet : MonoBehaviour {
 
 	void OnTriggerEnter2D(Collider2D other) {
 		//If the other object is the Shooter, ignore it.
-		if (other.gameObject == Shooter.gameObject) return;
+		if (Shooter != null && other.gameObject == Shooter.gameObject) return;
 
 		//If the other object is neither a player nor a bullet, destroy the bullet.
 		if (other.gameObject.GetComponent<Player>() is null && other.gameObject.GetComponent<Bullet>() is null) {
