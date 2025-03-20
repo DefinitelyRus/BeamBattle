@@ -203,7 +203,7 @@ public class LevelManager : MonoBehaviour
 		#region Universal Controls
 
 		//Volume up
-		if (Input.GetKeyDown(KeyCode.Plus)) {
+		if (Input.GetKeyDown(KeyCode.Equals)) {
 			Music.volume += 0.1f;
 			if (Music.volume > 1) Music.volume = 1;
 			Debug.Log($"[LevelManager] Music volume: {Music.volume}");
