@@ -81,11 +81,11 @@ public class Bullet : MonoBehaviour {
 
 		if (LifespanRemaining <= 0) DestroySelf(true); //Silently destroys self
 
-		//Body.AddForce(Speed * Time.deltaTime * transform.up, ForceMode2D.Impulse);
 		Body.linearVelocity = Speed * transform.up;
 	}
 
 	void OnTriggerEnter2D(Collider2D other) {
+
 		//If the other object is the Shooter, ignore it.
 		if (Shooter != null && other.gameObject == Shooter.gameObject) return;
 

@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class Missile : MonoBehaviour
 {
+	#region Game Objects and Components
+
+	[Header("Game Objects and Components")]
 	public GameObject Target;
 
 	public GameObject Explosion;
@@ -10,25 +13,34 @@ public class Missile : MonoBehaviour
 
 	public CircleCollider2D Collider;
 
+	private Player player;
+
+	#endregion
+
+	#region Values
+
 	public float Acceleration = 10;
 
 	public float MaxSpeed = 1;
 
 	public float TurnRate = 360;
 
-	private Player player;
+	#endregion
 
 	void SelfDestruct() {
 		if (player != null) player.MissileWarningSFX.Stop();
 
+		//Make big boom!
 		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
 		boom.GetComponent<Explosion>().ExplosionSize = 3;
 
 		Destroy(gameObject);
 	}
-    
-    void Start()
-    {
+
+	#region Unity
+
+	void Start() {
+		//Destroy self if there's nothing to target.
 		if (Target == null) {
 			SelfDestruct();
 			return;
@@ -43,18 +55,18 @@ public class Missile : MonoBehaviour
 	}
 
     void FixedUpdate() {
-		if (Target == null) SelfDestruct();
+		//Destroy self if there's nothing to target.
+		if (Target == null) {
+			SelfDestruct();
+			return;
+		}
 
 		// Rotate towards the target
 		Vector2 direction = (Target.transform.position - transform.position).normalized;
 		float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-
 		float currentAngle = transform.rotation.eulerAngles.z;
 		float newAngle = Mathf.LerpAngle(currentAngle, targetAngle, TurnRate * Time.fixedDeltaTime);
-
 		transform.rotation = Quaternion.Euler(0, 0, newAngle - 90);
-
-		Debug.Log($"[{name}] Current: {currentAngle:F2}  Target: {targetAngle:F2}  Lerp: {newAngle:F2}");
 
 		//Accelerate towards the target
 		Body.AddForce(Acceleration * Time.fixedDeltaTime * transform.up, ForceMode2D.Force);
@@ -76,4 +88,6 @@ public class Missile : MonoBehaviour
 			SelfDestruct();
 		}
 	}
+
+	#endregion
 }

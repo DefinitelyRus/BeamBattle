@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,15 +9,34 @@ public class LevelManager : MonoBehaviour
 	[Header("Game Objects and Components")]
 	public GameObject Player1Prefab;
 
+	/// <summary>
+	/// The exact Player 1 instance.
+	/// </summary>
 	public GameObject Player1;
 
+	/// <summary>
+	/// The Player 1 prefab to spawn.
+	/// </summary>
 	public GameObject Player2Prefab;
 
+	/// <summary>
+	/// The exact Player 2 instance.
+	/// </summary>
 	public GameObject Player2;
 
+	/// <summary>
+	/// The Player 2 prefab to spawn.
+	/// </summary>
 	public GameObject Spawnpoints;
 
+	/// <summary>
+	/// The missile prefab to spawn when a player goes out of bounds.
+	/// </summary>
 	public GameObject MissilePrefab;
+
+    public TextMeshProUGUI WinnerText;
+
+	public GameObject EndScreen;
 
 	#endregion
 
@@ -68,28 +88,41 @@ public class LevelManager : MonoBehaviour
 
 	#endregion
 
+	#region Methods
+
+	/// <summary>
+	/// It spawns the player at a random location.
+	/// </summary>
+	/// <param name="prefab"></param>
+	/// <returns></returns>
 	private GameObject SpawnPlayer(GameObject prefab) {
-		LayerMask mask = LayerMask.GetMask("Default"); // Adjust this layer to match obstacles
-		float checkRadius = 0.5f; // Adjust based on player collider size
+		LayerMask mask = LayerMask.GetMask("Default");
+		float checkRadius = 2f;
 		Vector2 spawnPosition;
 
-		// Ensure the spawn position is not inside another object
+		//Ensure the spawn position is not inside another object
 		do {
 			spawnPosition = new Vector2(Random.Range(-40, 40), Random.Range(-40, 40));
 		} while (Physics2D.OverlapCircle(spawnPosition, checkRadius, mask));
 
-		// TODO: Add respawn animation at the spawn position
-		// TODO: Add respawn SFX at the spawn position
+		//TODO: Add respawn animation at the spawn position
+		//TODO: Add respawn SFX at the spawn position
 
 		GameObject newPlayer = Instantiate(prefab);
 
-		// Rotates the player to a random angle
+		//Rotates the player to a random angle
 		newPlayer.transform.SetPositionAndRotation(spawnPosition, Quaternion.Euler(0, 0, Random.Range(0, 360)));
+
+		//Removes the "(Clone)" string postfixed to objects spawned from prefabs.
+		newPlayer.name = newPlayer.name.Replace("(Clone)", "");
 
 		return newPlayer;
 	}
 
-
+	/// <summary>
+	/// Plays a random track that isn't the same as the previous,
+	/// if there isn't already one playing.
+	/// </summary>
 	private void PlayMusic() {
 		if (!Music.enabled) return;
 
@@ -106,22 +139,28 @@ public class LevelManager : MonoBehaviour
 					break;
 				}
 			}
-			while (Music.clip == newTrack);
+			while (Music.clip == newTrack || newTrack.name == "Space Cruise");
 
+			//They're all from FTL lmao
 			Debug.Log($"[LevelManager] Now playing: Ben Prunty - {Music.clip.name}");
 
 			Music.Play();
-		} else {
-			Debug.LogWarning("[LevelManager] No music tracks found.");
 		}
+		
+		else Debug.LogWarning("[LevelManager] No music tracks found.");
 	}
 
+	/// <summary>
+	/// Displays the winner screen with SFX and prevents further respawns.
+	/// </summary>
+	/// <param name="winner"></param>
 	private void Win(GameObject winner) {
 		gameOver = true;
 
-		//TODO: Add victory screen here
+        EndScreen.SetActive(true);
+        WinnerText.text = winner.name + " Wins!";
 
-		Music.Stop();
+        Music.Stop();
 
 		//Disables the music component so that it doesn't play again
 		Music.enabled = false; 
@@ -129,7 +168,10 @@ public class LevelManager : MonoBehaviour
 		VictorySFX.Play();
 	}
 
-	private void Restart() {
+	/// <summary>
+	/// Reloads the scene.
+	/// </summary>
+	public void Restart() {
 		Debug.Log("[LevelManager] Restarting level...");
 
 		holdTimeRemaining = 3;
@@ -143,6 +185,10 @@ public class LevelManager : MonoBehaviour
 		Music.Stop(); //Stops the music when the level is reloaded.
 					  //When the level is reloaded, new music will play.
 	}
+
+	#endregion
+
+	#region Unity
 
 	void Start()
     {
@@ -178,7 +224,10 @@ public class LevelManager : MonoBehaviour
 
 		#endregion
 
+		//Music
 		if (!Music.isPlaying && !gameOver) PlayMusic();
+
+		#region Out of Bounds
 
 		if (player1BoundsCountdown == 0) { }
 		else if (player1BoundsCountdown > 0) player1BoundsCountdown -= Time.deltaTime;
@@ -199,6 +248,8 @@ public class LevelManager : MonoBehaviour
 			missile.GetComponent<Missile>().Target = Player2;
 			player2BoundsCountdown = 0;
 		}
+
+		#endregion
 
 		#region Universal Controls
 
@@ -230,9 +281,8 @@ public class LevelManager : MonoBehaviour
 			}
 		}
 
-		//Cancel quit game
+		//Cancel quit game, or if it doesn't work.
 		else if (Input.GetKeyUp(KeyCode.Escape)) {
-			Debug.Log("[LevelManager] Cancelled quit game.");
 			holdTimeRemaining = holdKeyDuration; //Reset timer
 		}
 
@@ -248,47 +298,86 @@ public class LevelManager : MonoBehaviour
 
 		//Cancel restart level
 		else if (Input.GetKeyUp(KeyCode.R)) {
-			Debug.Log("[LevelManager] Cancelled restart level.");
+			holdTimeRemaining = holdKeyDuration; //Reset timer
+		}
+
+		//Player 1 self-kill
+		if (Input.GetKey(KeyCode.LeftBracket)) {
+			if (holdTimeRemaining > 0) {
+				holdTimeRemaining -= Time.deltaTime;
+
+				//Timer reached zero; kill player.
+				if (holdTimeRemaining <= 0) {
+					Player1.GetComponent<Player>().Kill();
+				}
+			}
+		}
+		
+		//Cancel Player 1 self-kill
+		else if (Input.GetKeyUp(KeyCode.LeftBracket)) {
+			holdTimeRemaining = holdKeyDuration; //Reset timer
+		}
+
+		//Player 2 self-kill
+		if (Input.GetKey(KeyCode.RightBracket)) {
+			if (holdTimeRemaining > 0) {
+				holdTimeRemaining -= Time.deltaTime;
+
+				//Timer reached zero; kill player.
+				if (holdTimeRemaining <= 0) {
+					Player2.GetComponent<Player>().Kill();
+				}
+			}
+		}
+
+		//Cancel Player 1 self-kill
+		else if (Input.GetKeyUp(KeyCode.RightBracket)) {
 			holdTimeRemaining = holdKeyDuration; //Reset timer
 		}
 
 		#endregion
 	}
 
-	private void OnTriggerExit2D(Collider2D collision) {
-		Debug.Log("Something exited");
+	#region Out of bounds triggers
 
+	private void OnTriggerExit2D(Collider2D collision) {
+		//Player 1
 		if (collision.gameObject == Player1) {
-			Debug.Log($"[{name}] {collision.gameObject.name} left the play area!");
+			if (Player1.GetComponent<Player>().Hitpoints <= 0) return;
 			player1BoundsCountdown = OutOfBoundsTimer;
 
 			if (!OutOfBoundsSFX.isPlaying) OutOfBoundsSFX.Play();
 		}
-			
+		
+		//Player 2
 		else if (collision.gameObject == Player2) {
+			if (Player2.GetComponent<Player>().Hitpoints <= 0) return;
+
 			player2BoundsCountdown = OutOfBoundsTimer;
-			Debug.Log($"[{name}] {collision.gameObject.name} left the play area!");
 
 			if (!OutOfBoundsSFX.isPlaying) OutOfBoundsSFX.Play();
 		}
 	}
 
 	private void OnTriggerEnter2D(Collider2D collision) {
-		Debug.Log("Something entered");
-
+		//Player 1
 		if (collision.gameObject == Player1) {
-			Debug.Log($"[{name}] {collision.gameObject.name} entered the play area!");
 			player1BoundsCountdown = 0;
 
 			OutOfBoundsSFX.Stop();
+			//NOTE: This will deactivate the SFX if ONE player re-enters the area.
 		}
 		
+		//Player 2
 		else if (collision.gameObject == Player2) {
 			player2BoundsCountdown = 0;
-			Debug.Log($"[{name}] {collision.gameObject.name} entered the play area!");
 
 			OutOfBoundsSFX.Stop();
-			//This will deactivate the SFX if ONE player re-enters the area.
+			//NOTE: This will deactivate the SFX if ONE player re-enters the area.
 		}
 	}
+
+	#endregion
+
+	#endregion
 }

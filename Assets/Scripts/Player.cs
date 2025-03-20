@@ -153,9 +153,14 @@ public class Player : MonoBehaviour
 	public float HoldDuration = 1;
 	private float RemainingHoldDuration = 0;
 
-	
+	/// <summary>
+	/// Whether to allow firing the gun.
+	/// </summary>
 	private bool allowGun = true;
 
+	/// <summary>
+	/// Fires the gun.
+	/// </summary>
 	public void FireGun() {
 
 		//Spawn bullet
@@ -169,6 +174,9 @@ public class Player : MonoBehaviour
 		//The hold duration reset is put here to avoid firing the gun after the laser.
 	}
 
+	/// <summary>
+	/// Fires the laser.
+	/// </summary>
 	public void FireLaser() {
 
 		//Restore the player's speed
@@ -236,6 +244,9 @@ public class Player : MonoBehaviour
 		allowGun = false;
 	}
 
+	/// <summary>
+	/// Charges the laser.
+	/// </summary>
 	public void ChargeLaser() {
 		RemainingHoldDuration += Time.deltaTime;
 
@@ -294,7 +305,7 @@ public class Player : MonoBehaviour
 
 		//Disables player movement and allows drifting
 		Body.linearDamping = 0.5f;
-		Body.angularDamping = 0.5f;
+		Body.angularDamping = 10000;
 		ForwardAcceleration = 0;
 		ReverseAcceleration = 0;
 		TurnRate = 0;
@@ -380,11 +391,11 @@ public class Player : MonoBehaviour
 		//Fire gun
 		if (Input.GetKeyUp(FireKey) && RemainingGunCooldown == 0 && RemainingHoldDuration < 0.2 && allowGun) FireGun();
 
-		//Re-enable gun
-		else if (Input.GetKeyUp(FireKey)) allowGun = true;
+		//Re-enable gun if the player isn't dead.
+		else if (Input.GetKeyUp(FireKey) && Hitpoints > 0) allowGun = true;
 
-		//Spool up laser beam
-		if (Input.GetKey(FireKey) && RemainingLaserCooldown == 0) ChargeLaser();
+		//Spool up laser beam if the player isn't dead.
+		if (Input.GetKey(FireKey) && RemainingLaserCooldown == 0 && Hitpoints > 0) ChargeLaser();
 
 		//Did not hold long enough to fire
 		else if (Input.GetKeyUp(FireKey) && RemainingHoldDuration < HoldDuration) {
