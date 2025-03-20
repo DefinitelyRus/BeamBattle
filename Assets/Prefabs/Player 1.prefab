@@ -477,7 +477,7 @@ MonoBehaviour:
   Explosion: {fileID: 3238407230960366509, guid: 1718b9457398ae940a2f5ff3f9068fdf, type: 3}
   LaserSprite: {fileID: 5997108677572295654, guid: 33df5e44127851c42aa357917b421d17, type: 3}
   LaserRange: 150
-  GunCooldown: 0.25
+  GunCooldown: 0.4
   LaserCooldown: 1.5
   HoldDuration: 1.5
   ThrustSFX: {fileID: 8102071360435822486}
