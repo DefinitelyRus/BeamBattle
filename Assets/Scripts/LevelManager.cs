@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -16,16 +17,21 @@ public class LevelManager : MonoBehaviour
 
 	public GameObject Spawnpoints;
 
-	#endregion
+	public GameObject EndScreen;
 
-	#region Scoring and Timers
+    public TextMeshProUGUI WinnerText;
 
-	[Header("Scoring and Timers")]
+    #endregion
+
+    #region Scoring and Timers
+
+    [Header("Scoring and Timers")]
 	public int Player1Score = 0;
 
 	public int Player2Score = 0;
 
 	public int WinScore = 10;
+
 
 	#endregion
 
@@ -92,10 +98,10 @@ public class LevelManager : MonoBehaviour
 	private void Win(GameObject winner) {
 		gameOver = true;
 
-		//TODO: Add victory screen here
-		//Use winner.name
+        EndScreen.SetActive(true);
+        WinnerText.text = winner.name + " Wins!";
 
-		Music.Stop();
+        Music.Stop();
 
 		//Disables the music component so that it doesn't play again
 		Music.enabled = false; 
@@ -103,7 +109,7 @@ public class LevelManager : MonoBehaviour
 		VictorySFX.Play();
 	}
 
-	private void Restart() {
+	public void Restart() {
 		Debug.Log("[LevelManager] Restarting level...");
 
 		gameOver = false;
