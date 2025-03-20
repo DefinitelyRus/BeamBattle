@@ -156,80 +156,6 @@ public class Player : MonoBehaviour
 	
 	private bool allowGun = true;
 
-	#endregion
-
-	#region Hull
-
-	/// <summary>
-	/// The hitpoints of the player. When this reaches 0, the player is killed.
-	/// <br/><br/>
-	/// It's not accompanied by a "CurrentHitpoints" field because
-	/// the player instance is destroyed entirely and replaced by a new one when killed.
-	/// </summary>
-	public int Hitpoints { get; private set; } = 3;
-
-	/// <summary>
-	/// Damages the player and kills them if hitpoints reach 0.
-	/// </summary>
-	public void TakeHit() {
-		Hitpoints--;
-		Debug.Log($"[{gameObject.name}] was hit! HP: {Hitpoints}");
-
-		//Update the player's health sprite/explosionAnimation
-		PlayerAnimator.SetInteger("Health", Hitpoints);
-
-		//Boom!
-		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
-		boom.GetComponent<Explosion>().ExplosionSize = 2;
-
-		if (Hitpoints == 0) Kill();
-		//Set to exactly 0 only so Kill() won't be activated more than once.
-	}
-
-	/// <summary>
-	/// Disables player movement and initiates the death sequence.
-	/// </summary>
-	public void Kill() {
-		Debug.Log($"[{gameObject.name}] was killed!");
-
-		//Just for animations--the player is already dead.
-		Hitpoints = 0;
-		PlayerAnimator.SetInteger("Health", Hitpoints);
-
-		//Disables player movement and allows drifting
-		Body.linearDamping = 0.5f;
-		Body.angularDamping = 0.5f;
-		ForwardAcceleration = 0;
-		ReverseAcceleration = 0;
-		TurnRate = 0;
-		//It's fine to leave these values as is because a new player instance will be created when the player respawns.
-		//I thought of also disabling firing weapons, but let's allow some martyrdom. :)
-
-		StartCoroutine(ExecuteDeathSequence(1));
-	}
-
-	/// <summary>
-	/// Executes the death sequence for the player.
-	/// </summary>
-	/// <param name="initialDelay">How many seconds to wait before exploding.</param>
-	private IEnumerator ExecuteDeathSequence(float initialDelay = 1) {
-		yield return new WaitForSeconds(initialDelay);
-
-		//Boom!
-		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
-		boom.GetComponent<Explosion>().ExplosionSize = 3;
-
-		PlayerSprite.enabled = false;
-
-		yield return new WaitForSeconds(2);
-
-		Destroy(gameObject);
-	}
-
-	#endregion
-
-	#region Weapons
-
 	public void FireGun() {
 
 		//Spawn bullet
@@ -250,7 +176,7 @@ public class Player : MonoBehaviour
 		TurnRate = TurnRateCopy;
 
 		//Disable the laser guide
-		LaserGuide.color = new Color(1, 1, 1, 0);
+		LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, 0);
 
 		LaserSFX.Play();
 		ChargingSFX.Stop();
@@ -318,10 +244,82 @@ public class Player : MonoBehaviour
 		TurnRate = Mathf.Lerp(TurnRate, TurnRateWhileSpooling, RemainingHoldDuration / HoldDuration);
 
 		//Fades in the laser guide sprite while spooling up.
-		LaserGuide.color = new Color(1, 1, 1, Mathf.Lerp(0, 1, RemainingHoldDuration / HoldDuration));
+		LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, Mathf.Lerp(0, 1, RemainingHoldDuration / HoldDuration));
 
 		if (!ChargingSFX.isPlaying) ChargingSFX.PlayDelayed(0.15f);
 		//Delayed because it's audible when firing the guns.
+	}
+
+	#endregion
+
+	#region Hull
+
+	/// <summary>
+	/// The hitpoints of the player. When this reaches 0, the player is killed.
+	/// <br/><br/>
+	/// It's not accompanied by a "CurrentHitpoints" field because
+	/// the player instance is destroyed entirely and replaced by a new one when killed.
+	/// </summary>
+	public int Hitpoints { get; private set; } = 3;
+
+	/// <summary>
+	/// Damages the player and kills them if hitpoints reach 0.
+	/// </summary>
+	public void TakeHit() {
+		Hitpoints--;
+		Debug.Log($"[{gameObject.name}] was hit! HP: {Hitpoints}");
+
+		//Update the player's health sprite/explosionAnimation
+		PlayerAnimator.SetInteger("Health", Hitpoints);
+
+		//Boom!
+		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
+		boom.GetComponent<Explosion>().ExplosionSize = 2;
+
+		if (Hitpoints == 0) Kill();
+		//Set to exactly 0 only so Kill() won't be activated more than once.
+	}
+
+	/// <summary>
+	/// Disables player movement and initiates the death sequence.
+	/// </summary>
+	public void Kill() {
+		Debug.Log($"[{gameObject.name}] was killed!");
+
+		//Just for animations--the player is already dead.
+		Hitpoints = 0;
+		PlayerAnimator.SetInteger("Health", Hitpoints);
+		ThrustAnimator.SetBool("IsThrusting", false);
+		ThrustSFX.Stop();
+
+		//Disables player movement and allows drifting
+		Body.linearDamping = 0.5f;
+		Body.angularDamping = 0.5f;
+		ForwardAcceleration = 0;
+		ReverseAcceleration = 0;
+		TurnRate = 0;
+		allowGun = false;
+		//It's fine to leave these values as is because a new player instance will be created when the player respawns.
+
+		StartCoroutine(ExecuteDeathSequence(1));
+	}
+
+	/// <summary>
+	/// Executes the death sequence for the player.
+	/// </summary>
+	/// <param name="initialDelay">How many seconds to wait before exploding.</param>
+	private IEnumerator ExecuteDeathSequence(float initialDelay = 1) {
+		yield return new WaitForSeconds(initialDelay);
+
+		//Boom!
+		GameObject boom = Instantiate(Explosion, transform.position, transform.rotation);
+		boom.GetComponent<Explosion>().ExplosionSize = 3;
+
+		PlayerSprite.enabled = false;
+
+		yield return new WaitForSeconds(2);
+
+		Destroy(gameObject);
 	}
 
 	#endregion
@@ -373,7 +371,7 @@ public class Player : MonoBehaviour
 		MaxForwardSpeedCopy = MaxForwardSpeed;
 		TurnRateCopy = TurnRate;
 		LaserGuide.enabled = true;
-		LaserGuide.color = new Color(1, 1, 1, 0);
+		LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, 0);
 	}
 
     void Update()
@@ -395,7 +393,7 @@ public class Player : MonoBehaviour
 			TurnRate = TurnRateCopy;
 
 			//Disables the laser guide sprite when not spooling up.
-			LaserGuide.color = new Color(1, 1, 1, 0);
+			LaserGuide.color = new Color(LaserGuide.color.r, LaserGuide.color.g, LaserGuide.color.b, 0);
 
 			ChargingSFX.Stop();
 

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7043169996934798937}
   - component: {fileID: 1285204229371103798}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -98,7 +98,7 @@ GameObject:
   - component: {fileID: 2754875688975931509}
   - component: {fileID: 6550669647757554470}
   - component: {fileID: 1756619475982969509}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: P1 Laser Beam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
