@@ -93,6 +93,7 @@ public class LevelManager : MonoBehaviour
 		gameOver = true;
 
 		//TODO: Add victory screen here
+		//Use winner.name
 
 		Music.Stop();
 
