@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ac8eb3906c9d6fe47a26c16ccca8237a
+guid: fa57c65613ab7be439f99a5587a8e0d4
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - PixelMiddle
+  - ThaleahFat
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

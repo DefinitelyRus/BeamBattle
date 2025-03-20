@@ -456,8 +456,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: PEW PEW PEW
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 6b843751f38cc154193151144896e6cc, type: 2}
+  m_sharedMaterial: {fileID: 1342764783885948617, guid: 6b843751f38cc154193151144896e6cc, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
