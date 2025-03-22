@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,12 +6,18 @@ public class MainScreen : MonoBehaviour
 {
     public void PlayGame()
     {
-        SceneManager.LoadScene("Game"); 
+        StartCoroutine(DelayedSceneLoad());
+    }
+
+    private IEnumerator DelayedSceneLoad()
+    {
+        yield return new WaitForSeconds(0.1f); // Wait for animation to finish
+        SceneManager.LoadScene("Game");
     }
 
     public void ExitGame()
     {
-        Debug.Log("Exiting game..."); 
-        Application.Quit(); 
+        Debug.Log("Exiting game...");
+        Application.Quit();
     }
 }

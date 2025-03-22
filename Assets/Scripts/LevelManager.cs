@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using System.Collections;
 using UnityEngine.SceneManagement;
 
 public class LevelManager : MonoBehaviour
@@ -186,156 +187,188 @@ public class LevelManager : MonoBehaviour
 					  //When the level is reloaded, new music will play.
 	}
 
-	#endregion
-
-	#region Unity
-
-	void Start()
+    public void Menu()
     {
-		MusicTracks = Resources.LoadAll<AudioClip>("Music");
-	}
+        StartCoroutine(DelayedSceneLoad("Main Screen"));
+    }
 
-	void Update() {
-		#region Player Scoring
-
-		if (Player1 == null && !gameOver) {
-			Player2Score++;
-
-			//TODO: Add score SFX here
-
-			//TODO: Update UI here
-
-			//Spawn a new player if the game is not over
-			if (Player2Score < WinScore) Player1 = SpawnPlayer(Player1Prefab);
-			else Win(Player2);
-		}
-
-		if (Player2 == null && !gameOver) {
-		Player1Score++;
-
-			//TODO: Add score SFX here
-
-			//TODO: Update UI here
-
-			//Spawn a new player if the game is not over
-			if (Player1Score < WinScore) Player2 = SpawnPlayer(Player2Prefab);
-			else Win(Player1);
-		}
-
+	private IEnumerator DelayedSceneLoad(string sceneName)
+	{
+		yield return new WaitForSeconds(0.1f);
+		SceneManager.LoadScene(sceneName);
 		#endregion
 
-		//Music
-		if (!Music.isPlaying && !gameOver) PlayMusic();
+		#region Unity
 
-		#region Out of Bounds
-
-		if (player1BoundsCountdown == 0) { }
-		else if (player1BoundsCountdown > 0) player1BoundsCountdown -= Time.deltaTime;
-		else if (player1BoundsCountdown < 0) {
-			//Spawn missile
-			GameObject missile = Instantiate(MissilePrefab);
-			missile.transform.position = (Vector2) transform.position + Random.insideUnitCircle * 100;
-			missile.GetComponent<Missile>().Target = Player1;
-			player1BoundsCountdown = 0;
+		void Start()
+		{
+			MusicTracks = Resources.LoadAll<AudioClip>("Music");
 		}
 
-		if (player2BoundsCountdown == 0) { }
-		else if (player2BoundsCountdown > 0) player2BoundsCountdown -= Time.deltaTime;
-		else if (player2BoundsCountdown < 0) {
-			//Spawn missile
-			GameObject missile = Instantiate(MissilePrefab);
-			missile.transform.position = (Vector2) transform.position + Random.insideUnitCircle * 100;
-			missile.GetComponent<Missile>().Target = Player2;
-			player2BoundsCountdown = 0;
-		}
+		void Update()
+		{
+			#region Player Scoring
 
-		#endregion
+			if (Player1 == null && !gameOver)
+			{
+				Player2Score++;
 
-		#region Universal Controls
+				//TODO: Add score SFX here
 
-		//Volume up
-		if (Input.GetKeyDown(KeyCode.Equals)) {
-			Music.volume += 0.1f;
-			if (Music.volume > 1) Music.volume = 1;
-			Debug.Log($"[LevelManager] Music volume: {Music.volume}");
-		}
+				//TODO: Update UI here
 
-		//Volume down
-		else if (Input.GetKeyDown(KeyCode.Minus)) {
-			Music.volume -= 0.1f;
-			if (Music.volume < 0) Music.volume = 0;
-			Debug.Log($"[LevelManager] Music volume: {Music.volume}");
-		}
+				//Spawn a new player if the game is not over
+				if (Player2Score < WinScore) Player1 = SpawnPlayer(Player1Prefab);
+				else Win(Player2);
+			}
 
-		//Quit game
-		if (Input.GetKey(KeyCode.Escape)) {
-			if (holdTimeRemaining > 0) {
-				holdTimeRemaining -= Time.deltaTime;
+			if (Player2 == null && !gameOver)
+			{
+				Player1Score++;
 
-				//Timer reached zero; exit the game
-				if (holdTimeRemaining <= 0) {
-					Debug.Log("[LevelManager] Quitting game...");
-					holdTimeRemaining = 3;
-					Application.Quit(); //Doesn't work in editor mode
+				//TODO: Add score SFX here
+
+				//TODO: Update UI here
+
+				//Spawn a new player if the game is not over
+				if (Player1Score < WinScore) Player2 = SpawnPlayer(Player2Prefab);
+				else Win(Player1);
+			}
+
+			#endregion
+
+			//Music
+			if (!Music.isPlaying && !gameOver) PlayMusic();
+
+			#region Out of Bounds
+
+			if (player1BoundsCountdown == 0) { }
+			else if (player1BoundsCountdown > 0) player1BoundsCountdown -= Time.deltaTime;
+			else if (player1BoundsCountdown < 0)
+			{
+				//Spawn missile
+				GameObject missile = Instantiate(MissilePrefab);
+				missile.transform.position = (Vector2)transform.position + Random.insideUnitCircle * 100;
+				missile.GetComponent<Missile>().Target = Player1;
+				player1BoundsCountdown = 0;
+			}
+
+			if (player2BoundsCountdown == 0) { }
+			else if (player2BoundsCountdown > 0) player2BoundsCountdown -= Time.deltaTime;
+			else if (player2BoundsCountdown < 0)
+			{
+				//Spawn missile
+				GameObject missile = Instantiate(MissilePrefab);
+				missile.transform.position = (Vector2)transform.position + Random.insideUnitCircle * 100;
+				missile.GetComponent<Missile>().Target = Player2;
+				player2BoundsCountdown = 0;
+			}
+
+			#endregion
+
+			#region Universal Controls
+
+			//Volume up
+			if (Input.GetKeyDown(KeyCode.Equals))
+			{
+				Music.volume += 0.1f;
+				if (Music.volume > 1) Music.volume = 1;
+				Debug.Log($"[LevelManager] Music volume: {Music.volume}");
+			}
+
+			//Volume down
+			else if (Input.GetKeyDown(KeyCode.Minus))
+			{
+				Music.volume -= 0.1f;
+				if (Music.volume < 0) Music.volume = 0;
+				Debug.Log($"[LevelManager] Music volume: {Music.volume}");
+			}
+
+			//Quit game
+			if (Input.GetKey(KeyCode.Escape))
+			{
+				if (holdTimeRemaining > 0)
+				{
+					holdTimeRemaining -= Time.deltaTime;
+
+					//Timer reached zero; exit the game
+					if (holdTimeRemaining <= 0)
+					{
+						Debug.Log("[LevelManager] Quitting game...");
+						holdTimeRemaining = 3;
+						Application.Quit(); //Doesn't work in editor mode
+					}
 				}
 			}
-		}
 
-		//Cancel quit game, or if it doesn't work.
-		else if (Input.GetKeyUp(KeyCode.Escape)) {
-			holdTimeRemaining = holdKeyDuration; //Reset timer
-		}
-
-		//Restart level
-		if (Input.GetKey(KeyCode.R)) {
-			if (holdTimeRemaining > 0) {
-				holdTimeRemaining -= Time.deltaTime;
-
-				//Timer reached zero; restart the level
-				if (holdTimeRemaining <= 0) Restart();
+			//Cancel quit game, or if it doesn't work.
+			else if (Input.GetKeyUp(KeyCode.Escape))
+			{
+				holdTimeRemaining = holdKeyDuration; //Reset timer
 			}
-		}
 
-		//Cancel restart level
-		else if (Input.GetKeyUp(KeyCode.R)) {
-			holdTimeRemaining = holdKeyDuration; //Reset timer
-		}
+			//Restart level
+			if (Input.GetKey(KeyCode.R))
+			{
+				if (holdTimeRemaining > 0)
+				{
+					holdTimeRemaining -= Time.deltaTime;
 
-		//Player 1 self-kill
-		if (Input.GetKey(KeyCode.LeftBracket)) {
-			if (holdTimeRemaining > 0) {
-				holdTimeRemaining -= Time.deltaTime;
-
-				//Timer reached zero; kill player.
-				if (holdTimeRemaining <= 0) {
-					Player1.GetComponent<Player>().Kill();
+					//Timer reached zero; restart the level
+					if (holdTimeRemaining <= 0) Restart();
 				}
 			}
-		}
-		
-		//Cancel Player 1 self-kill
-		else if (Input.GetKeyUp(KeyCode.LeftBracket)) {
-			holdTimeRemaining = holdKeyDuration; //Reset timer
-		}
 
-		//Player 2 self-kill
-		if (Input.GetKey(KeyCode.RightBracket)) {
-			if (holdTimeRemaining > 0) {
-				holdTimeRemaining -= Time.deltaTime;
+			//Cancel restart level
+			else if (Input.GetKeyUp(KeyCode.R))
+			{
+				holdTimeRemaining = holdKeyDuration; //Reset timer
+			}
 
-				//Timer reached zero; kill player.
-				if (holdTimeRemaining <= 0) {
-					Player2.GetComponent<Player>().Kill();
+			//Player 1 self-kill
+			if (Input.GetKey(KeyCode.LeftBracket))
+			{
+				if (holdTimeRemaining > 0)
+				{
+					holdTimeRemaining -= Time.deltaTime;
+
+					//Timer reached zero; kill player.
+					if (holdTimeRemaining <= 0)
+					{
+						Player1.GetComponent<Player>().Kill();
+					}
 				}
 			}
-		}
 
-		//Cancel Player 1 self-kill
-		else if (Input.GetKeyUp(KeyCode.RightBracket)) {
-			holdTimeRemaining = holdKeyDuration; //Reset timer
-		}
+			//Cancel Player 1 self-kill
+			else if (Input.GetKeyUp(KeyCode.LeftBracket))
+			{
+				holdTimeRemaining = holdKeyDuration; //Reset timer
+			}
 
-		#endregion
+			//Player 2 self-kill
+			if (Input.GetKey(KeyCode.RightBracket))
+			{
+				if (holdTimeRemaining > 0)
+				{
+					holdTimeRemaining -= Time.deltaTime;
+
+					//Timer reached zero; kill player.
+					if (holdTimeRemaining <= 0)
+					{
+						Player2.GetComponent<Player>().Kill();
+					}
+				}
+			}
+
+			//Cancel Player 1 self-kill
+			else if (Input.GetKeyUp(KeyCode.RightBracket))
+			{
+				holdTimeRemaining = holdKeyDuration; //Reset timer
+			}
+
+			#endregion
+		}
 	}
 
 	#region Out of bounds triggers
