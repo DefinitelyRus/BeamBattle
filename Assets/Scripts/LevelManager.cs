@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using System.Collections;
 using UnityEngine.SceneManagement;
 
 public class LevelManager : MonoBehaviour
@@ -139,7 +140,7 @@ public class LevelManager : MonoBehaviour
 					break;
 				}
 			}
-			while (Music.clip == newTrack || newTrack.name == "Space Cruise");
+			while (Music.clip == newTrack || Music.clip.name == "Space Cruise");
 
 			//They're all from FTL lmao
 			Debug.Log($"[LevelManager] Now playing: Ben Prunty - {Music.clip.name}");
@@ -186,12 +187,16 @@ public class LevelManager : MonoBehaviour
 					  //When the level is reloaded, new music will play.
 	}
 
+    public void Menu()
+    {
+        StartCoroutine(DelayedSceneLoad("Main Screen"));
+	}
+
 	#endregion
 
 	#region Unity
 
-	void Start()
-    {
+	void Start() {
 		MusicTracks = Resources.LoadAll<AudioClip>("Music");
 	}
 
@@ -211,7 +216,7 @@ public class LevelManager : MonoBehaviour
 		}
 
 		if (Player2 == null && !gameOver) {
-		Player1Score++;
+			Player1Score++;
 
 			//TODO: Add score SFX here
 
@@ -229,8 +234,7 @@ public class LevelManager : MonoBehaviour
 
 		#region Out of Bounds
 
-		if (player1BoundsCountdown == 0) { }
-		else if (player1BoundsCountdown > 0) player1BoundsCountdown -= Time.deltaTime;
+		if (player1BoundsCountdown == 0) { } else if (player1BoundsCountdown > 0) player1BoundsCountdown -= Time.deltaTime;
 		else if (player1BoundsCountdown < 0) {
 			//Spawn missile
 			GameObject missile = Instantiate(MissilePrefab);
@@ -239,8 +243,7 @@ public class LevelManager : MonoBehaviour
 			player1BoundsCountdown = 0;
 		}
 
-		if (player2BoundsCountdown == 0) { }
-		else if (player2BoundsCountdown > 0) player2BoundsCountdown -= Time.deltaTime;
+		if (player2BoundsCountdown == 0) { } else if (player2BoundsCountdown > 0) player2BoundsCountdown -= Time.deltaTime;
 		else if (player2BoundsCountdown < 0) {
 			//Spawn missile
 			GameObject missile = Instantiate(MissilePrefab);
@@ -312,7 +315,7 @@ public class LevelManager : MonoBehaviour
 				}
 			}
 		}
-		
+
 		//Cancel Player 1 self-kill
 		else if (Input.GetKeyUp(KeyCode.LeftBracket)) {
 			holdTimeRemaining = holdKeyDuration; //Reset timer
@@ -336,6 +339,12 @@ public class LevelManager : MonoBehaviour
 		}
 
 		#endregion
+	}
+
+	private IEnumerator DelayedSceneLoad(string sceneName)
+	{
+		yield return new WaitForSeconds(0.1f);
+		SceneManager.LoadScene(sceneName);
 	}
 
 	#region Out of bounds triggers
