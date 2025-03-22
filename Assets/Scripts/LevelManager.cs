@@ -141,6 +141,7 @@ public class LevelManager : MonoBehaviour
 				}
 			}
 			while (Music.clip == newTrack || Music.clip.name == "Space Cruise");
+			//Select a random track except for "Space Cruise". That's for the main menu.
 
 			//They're all from FTL lmao
 			Debug.Log($"[LevelManager] Now playing: Ben Prunty - {Music.clip.name}");
@@ -187,6 +188,9 @@ public class LevelManager : MonoBehaviour
 					  //When the level is reloaded, new music will play.
 	}
 
+	/// <summary>
+	/// Goes back to the main menu.
+	/// </summary>
     public void Menu()
     {
         StartCoroutine(DelayedSceneLoad("Main Screen"));
