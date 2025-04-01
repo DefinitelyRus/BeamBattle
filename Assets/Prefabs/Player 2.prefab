@@ -491,7 +491,7 @@ MonoBehaviour:
   ReverseKey: 274
   TurnLeftKey: 276
   TurnRightKey: 275
-  FireKey: 270
+  FireKey: 303
 --- !u!95 &4955895450563440022
 Animator:
   serializedVersion: 7
